@@ -20,19 +20,34 @@
  * i18n property list
  */
 $.i18n = {
-	
-	dict: null,
-	
+    
+    dictionaries: {},
+    defaultDict: null,
+    
 /**
  * setDictionary()
  * Initialise the dictionary and translate nodes
  *
  * @param property_list i18n_dict : The dictionary to use for translation
+ * @param string defaultDict : name of default dictionary
  */
-	setDictionary: function(i18n_dict) {
-		this.dict = i18n_dict;
-	},
-	
+    setDictionaries: function(i18n_dict, defaultDict) {
+        this.dictionaries = i18n_dict;
+
+        if (!defaultDict) {
+            for (var i in i18n_dict) {
+                defaultDict = i;
+                break;
+            }
+        }
+
+        this.setDefaultDictionary(defaultDict);
+    },
+
+    setDefaultDictionary: function(defaultDict) {
+        this.defaultDict = defaultDict;
+    },
+    
 /**
  * _()
  * The actual translation function. Looks the given string up in the 
@@ -44,14 +59,31 @@ $.i18n = {
  * @return string : Translated word
  *
  */
-	_: function (str, params) {
-		var transl = str;
-		if (this.dict && this.dict[str]) {
-			transl = this.dict[str];
-		}
-		return this.printf(transl, params);
-	},
-	
+    _: function (str) {
+        var transl = str,
+            dict,
+            dictName = this.defaultDict,
+            params;
+
+        if (typeof arguments[1] == 'string') {
+            dictName = arguments[1];
+        } else if (arguments[1] instanceof Array) {
+            params = arguments[1];
+        }
+
+        if (!params && arguments[2] instanceof Array) {
+            params = arguments[2];
+        }
+
+        dict = this.dictionaries[dictName];
+
+        if (dict && dict[str]) {
+            transl = dict[str];
+        }
+
+        return this.printf(transl, params);
+    },
+    
 /**
  * toEntity()
  * Change non-ASCII characters to entity representation 
@@ -60,17 +92,17 @@ $.i18n = {
  * @return string result : Original string with non-ASCII content converted to entities
  *
  */
-	toEntity: function (str) {
-		var result = '';
-		for (var i=0;i<str.length; i++) {
-			if (str.charCodeAt(i) > 128)
-				result += "&#"+str.charCodeAt(i)+";";
-			else
-				result += str.charAt(i);
-		}
-		return result;
-	},
-	
+    /*toEntity: function (str) {
+        var result = '';
+        for (var i=0;i<str.length; i++) {
+            if (str.charCodeAt(i) > 128)
+                result += "&#"+str.charCodeAt(i)+";";
+            else
+                result += str.charAt(i);
+        }
+        return result;
+    },*/
+    
 /**
  * stripStr()
  *
@@ -78,10 +110,10 @@ $.i18n = {
  * @return string result : Stripped string
  *
  */
- 	stripStr: function(str) {
-		return str.replace(/^\s*/, "").replace(/\s*$/, "");
-	},
-	
+    /*stripStr: function(str) {
+        return str.replace(/^\s<], "").replace(/\s*$/, "");
+    },*/
+    
 /**
  * stripStrML()
  *
@@ -89,17 +121,17 @@ $.i18n = {
  * @return string result : Stripped string
  *
  */
-	stripStrML: function(str) {
-		// Split because m flag doesn't exist before JS1.5 and we need to
-		// strip newlines anyway
-		var parts = str.split('\n');
-		for (var i=0; i<parts.length; i++)
-			parts[i] = stripStr(parts[i]);
-	
-		// Don't join with empty strings, because it "concats" words
-		// And strip again
-		return stripStr(parts.join(" "));
-	},
+    /*stripStrML: function(str) {
+        // Split because m flag doesn't exist before JS1.5 and we need to
+        // strip newlines anyway
+        var parts = str.split('\n');
+        for (var i=0; i<parts.length; i++)
+            parts[i] = stripStr(parts[i]);
+    
+        // Don't join with empty strings, because it "concats" words
+        // And strip again
+        return stripStr(parts.join(" "));
+    },*/
 
 /*
  * printf()
@@ -111,28 +143,28 @@ $.i18n = {
  * @param string S : string to perform printf on.
  * @param string L : Array of arguments for printf()
  */
-	printf: function(S, L) {
-		if (!L) return S;
+    printf: function(S, L) {
+        if (!L) return S;
 
-		var nS     = "";
-		var search = /%(\d+)\$s/g;
-		// replace %n1$ where n is a number
-		while (result = search.exec(S)) {
-			var index = parseInt(result[1], 10) - 1;
-			S = S.replace('%' + result[1] + '\$s', (L[index]));
-			L.splice(index, 1);
-		}
-		var tS = S.split("%s");
+        var nS     = "";
+        var search = /%(\d+)\$s/g;
+        // replace %n1$ where n is a number
+        while (result = search.exec(S)) {
+            var index = parseInt(result[1], 10) - 1;
+            S = S.replace('%' + result[1] + '\$s', (L[index]));
+            L.splice(index, 1);
+        }
+        var tS = S.split("%s");
 
-		if (tS.length > 1) {
-			for(var i=0; i<L.length; i++) {
-				if (tS[i].lastIndexOf('%') == tS[i].length-1 && i != L.length-1)
-					tS[i] += "s"+tS.splice(i+1,1)[0];
-				nS += tS[i] + L[i];
-			}
-		}
-		return nS + tS[tS.length-1];
-	}
+        if (tS.length > 1) {
+            for(var i=0; i<L.length; i++) {
+                if (tS[i].lastIndexOf('%') == tS[i].length-1 && i != L.length-1)
+                    tS[i] += "s"+tS.splice(i+1,1)[0];
+                nS += tS[i] + L[i];
+            }
+        }
+        return nS + tS[tS.length-1];
+    }
 
 };
 
